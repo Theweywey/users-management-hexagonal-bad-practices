@@ -1,9 +1,16 @@
 package com.jcaa.usersmanagement.domain.model;
 
+import java.util.Objects;
 import lombok.Value;
 
 @Value
 public class EmailDestinationModel {
+
+  // Regla 10: Centralización de mensajes de error en constantes
+  private static final String EMAIL_REQUIRED_MSG = "El email del destinatario es requerido.";
+  private static final String NAME_REQUIRED_MSG = "El nombre del destinatario es requerido.";
+  private static final String SUBJECT_REQUIRED_MSG = "El asunto es requerido.";
+  private static final String BODY_REQUIRED_MSG = "El cuerpo del mensaje es requerido.";
 
   String destinationEmail;
   String destinationName;
@@ -11,24 +18,20 @@ public class EmailDestinationModel {
   String body;
 
   public EmailDestinationModel(
-      final String destinationEmail,
-      final String destinationName,
-      final String subject,
-      final String body) {
-    this.destinationEmail = validateNotBlank(destinationEmail, "El email del destinatario es requerido.");
-    this.destinationName  = validateNotBlank(destinationName,  "El nombre del destinatario es requerido.");
-    this.subject          = validateNotBlank(subject,          "El asunto es requerido.");
-    this.body             = validateNotBlank(body,             "El cuerpo del mensaje es requerido.");
+          final String destinationEmail,
+          final String destinationName,
+          final String subject,
+          final String body) {
+    this.destinationEmail = validateNotBlank(destinationEmail, EMAIL_REQUIRED_MSG);
+    this.destinationName = validateNotBlank(destinationName, NAME_REQUIRED_MSG);
+    this.subject = validateNotBlank(subject, SUBJECT_REQUIRED_MSG);
+    this.body = validateNotBlank(body, BODY_REQUIRED_MSG);
   }
 
   private static String validateNotBlank(final String value, final String errorMessage) {
-    // VIOLACIÓN Regla 4: se usa == null en lugar de Objects.requireNonNull() o Objects.isNull().
-    // Para objetos siempre debe usarse Objects.isNull/nonNull, nunca operadores == o !=.
-    if (value == null) {
-      throw new NullPointerException(errorMessage);
-    }
-    // VIOLACIÓN Regla 10: mensajes de error hardcodeados en el cuerpo del método,
-    // en lugar de definirse como constantes con nombre descriptivo.
+    // Regla 4: Uso de utilidades estándar de Java para validación de nulos
+    Objects.requireNonNull(value, errorMessage);
+
     if (value.trim().isEmpty()) {
       throw new IllegalArgumentException(errorMessage);
     }
