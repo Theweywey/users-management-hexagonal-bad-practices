@@ -42,7 +42,6 @@ public final class DependencyContainer {
      * Por ahora, lo mantenemos aquí para que la app funcione, pero llamándolo
      * sobre la instancia ya creada.
      */
-    userRepository.init();
 
     // 2. Notificaciones
     final JavaMailEmailSenderAdapter emailSender = new JavaMailEmailSenderAdapter(buildSmtpConfig(properties));
