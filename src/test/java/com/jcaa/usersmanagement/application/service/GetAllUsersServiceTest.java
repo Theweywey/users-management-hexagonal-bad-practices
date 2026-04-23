@@ -19,8 +19,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// VIOLACIÓN Regla 11: se eliminó el javadoc de la clase que documentaba qué casos cubre.
-@DisplayName("GetAllUsersService")
+/**
+ * Pruebas unitarias para GetAllUsersService.
+ * * <p>Esta suite verifica:
+ * <ul>
+ * <li>Recuperación exitosa de la lista completa de usuarios desde el puerto.</li>
+ * <li>Manejo correcto de casos sin datos (retorno de lista vacía en lugar de null).</li>
+ * </ul>
+ * * Clean Code - Regla 11: Documentación, estructura AAA y aserciones expresivas.
+ */
+@DisplayName("Pruebas Unitarias: GetAllUsersService")
 @ExtendWith(MockitoExtension.class)
 class GetAllUsersServiceTest {
 
@@ -34,35 +42,40 @@ class GetAllUsersServiceTest {
   }
 
   @Test
-  @DisplayName("execute() retorna la lista de usuarios del puerto")
+  @DisplayName("Debe retornar la lista de usuarios obtenida desde el puerto")
   void shouldReturnUsersFromPort() {
-    // VIOLACIÓN Regla 11: se eliminaron los comentarios de estructura Arrange–Act–Assert.
-    // La regla exige que los bloques estén documentados con // Arrange, // Act, // Assert.
+    // Arrange
     final UserModel user =
-        new UserModel(
-            new UserId("u-001"),
-            new UserName("John Arrieta"),
-            new UserEmail("john@example.com"),
-            UserPassword.fromHash("$2a$12$abcdefghijklmnopqrstuO"),
-            UserRole.ADMIN,
-            UserStatus.ACTIVE);
+            new UserModel(
+                    new UserId("u-001"),
+                    new UserName("John Arrieta"),
+                    new UserEmail("john@example.com"),
+                    UserPassword.fromHash("$2a$12$abcdefghijklmnopqrstuO"),
+                    UserRole.ADMIN,
+                    UserStatus.ACTIVE);
     when(getAllUsersPort.getAll()).thenReturn(List.of(user));
+
+    // Act
     final List<UserModel> result = service.execute();
-    // VIOLACIÓN Regla 11: se usa assertFalse(result.isEmpty()) y assertTrue(x == y)
-    // en lugar de assertEquals(1, result.size()) y assertSame(user, result.get(0)).
-    assertFalse(result.isEmpty());
-    assertTrue(result.get(0) == user);
+
+    // Assert
+    // Regla 11: Aserciones expresivas que informan cantidad y referencia exacta
+    assertEquals(1, result.size(), "La lista debe contener exactamente un usuario");
+    assertSame(user, result.get(0), "El usuario en la lista debe ser la misma instancia del puerto");
   }
 
-  // VIOLACIÓN Regla 11: falta @DisplayName — los tests deben documentar su comportamiento.
   @Test
-  void shouldReturnNullWhenNoUsers() {
-    // VIOLACIÓN Regla 11: el test verifica que el resultado es null (comportamiento incorrecto),
-    // en vez de verificar que retorna lista vacía. Un test de calidad debe validar el
-    // comportamiento correcto del negocio, no validar un bug.
+  @DisplayName("Debe retornar una lista vacía cuando no existen usuarios")
+  void shouldReturnEmptyListWhenNoUsers() {
+    // Arrange
     when(getAllUsersPort.getAll()).thenReturn(List.of());
+
+    // Act
     final List<UserModel> result = service.execute();
-    // VIOLACIÓN Regla 11: se usa assertTrue(result == null) en lugar de assertNull(result).
-    assertTrue(result == null);
+
+    // Assert
+    // Regla 11: Se corrige el bug. El resultado debe ser una lista vacía, no null.
+    assertNotNull(result, "El resultado nunca debe ser null");
+    assertTrue(result.isEmpty(), "La lista debe estar vacía si no hay usuarios");
   }
 }
