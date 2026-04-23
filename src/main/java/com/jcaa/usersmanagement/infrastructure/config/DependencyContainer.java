@@ -36,13 +36,6 @@ public final class DependencyContainer {
     final Connection connection = buildDatabaseConnection(properties);
     final UserRepositoryMySQL userRepository = new UserRepositoryMySQL(connection);
 
-    /* * Nota sobre Regla 19 y 22:
-     * Para eliminar el acoplamiento rígido y temporal, lo ideal es que 'init()'
-     * se llame dentro del constructor de UserRepositoryMySQL.
-     * Por ahora, lo mantenemos aquí para que la app funcione, pero llamándolo
-     * sobre la instancia ya creada.
-     */
-
     // 2. Notificaciones
     final JavaMailEmailSenderAdapter emailSender = new JavaMailEmailSenderAdapter(buildSmtpConfig(properties));
     final EmailNotificationService emailNotification = new EmailNotificationService(emailSender);
@@ -80,7 +73,6 @@ public final class DependencyContainer {
             properties.get(DB_USER),
             properties.get(DB_PASSWORD));
 
-    // Arreglo de la Regla 4: Llamada estática directa a la fábrica
     return DatabaseConnectionFactory.createConnection(config);
   }
 
