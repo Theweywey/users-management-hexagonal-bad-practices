@@ -26,13 +26,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Tests para GetUserByIdService.
- *
- * <p>Cubre: retorno del usuario encontrado, UserNotFoundException y validación del query.
+ * Pruebas unitarias para GetUserByIdService.
+ * * <p>Cubre los escenarios de:
+ * <ul>
+ * <li>Búsqueda exitosa con retorno de modelo.</li>
+ * <li>Manejo de excepción cuando el usuario no existe.</li>
+ * <li>Validación de integridad del Query de entrada.</li>
+ * </ul>
+ * * Clean Code - Regla 11: Documentación de casos, estructura AAA y aserciones expresivas.
  */
-@DisplayName("GetUserByIdService")
+@DisplayName("Pruebas Unitarias: GetUserByIdService")
 @ExtendWith(MockitoExtension.class)
 class GetUserByIdServiceTest {
+
+  private static final String VALID_ID = "u-001";
+  private static final String INVALID_ID = "no-existe";
 
   @Mock private GetUserByIdPort getUserByIdPort;
 
@@ -45,38 +53,44 @@ class GetUserByIdServiceTest {
     }
   }
 
-  // ── flujo feliz
-
   @Test
-  @DisplayName("execute() retorna el usuario cuando el id existe")
+  @DisplayName("Debe retornar el usuario cuando el ID existe en el sistema")
   void shouldReturnUserWhenFound() {
-    // VIOLACIÓN Regla 11: se eliminaron los comentarios de estructura Arrange–Act–Assert.
-    final GetUserByIdQuery query = new GetUserByIdQuery("u-001");
-    final UserModel expected =
-        new UserModel(
-            new UserId("u-001"),
+    // Arrange
+    final GetUserByIdQuery query = new GetUserByIdQuery(VALID_ID);
+    final UserModel expected = new UserModel(
+            new UserId(VALID_ID),
             new UserName("John Arrieta"),
             new UserEmail("john@example.com"),
             UserPassword.fromHash("$2a$12$abcdefghijklmnopqrstuO"),
             UserRole.ADMIN,
             UserStatus.ACTIVE);
+
     when(getUserByIdPort.getById(any())).thenReturn(Optional.of(expected));
+
+    // Act
     final UserModel result = service.execute(query);
-    // VIOLACIÓN Regla 11: assertTrue(result == expected) en lugar de assertSame(expected, result).
-    assertTrue(result != null);
-    assertTrue(result == expected);
+
+    // Assert
+    // Regla 11: assertSame verifica identidad de objeto, assertNotNull verifica existencia.
+    assertNotNull(result, "El usuario retornado no debe ser nulo");
+    assertSame(expected, result, "El objeto retornado debe ser la misma instancia que provee el puerto");
   }
 
-  // VIOLACIÓN Regla 11: falta @DisplayName en el método.
   @Test
+  @DisplayName("Debe lanzar UserNotFoundException cuando el ID no existe")
   void shouldThrowWhenUserNotFound() {
-    final GetUserByIdQuery query = new GetUserByIdQuery("no-existe");
+    // Arrange
+    final GetUserByIdQuery query = new GetUserByIdQuery(INVALID_ID);
     when(getUserByIdPort.getById(any())).thenReturn(Optional.empty());
-    assertThrows(UserNotFoundException.class, () -> service.execute(query));
+
+    // Act & Assert
+    assertThrows(UserNotFoundException.class, () -> service.execute(query),
+            "Se esperaba UserNotFoundException para un ID inexistente");
   }
 
   @Test
-  @DisplayName("execute() lanza ConstraintViolationException cuando el id está en blanco")
+  @DisplayName("Debe lanzar ConstraintViolationException cuando el Query tiene un ID vacío")
   void shouldThrowWhenQueryIsInvalid() {
     // Arrange
     final GetUserByIdQuery query = new GetUserByIdQuery("");
