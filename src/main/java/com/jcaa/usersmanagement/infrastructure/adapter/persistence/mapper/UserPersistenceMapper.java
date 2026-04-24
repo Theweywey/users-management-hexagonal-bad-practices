@@ -9,24 +9,22 @@ import com.jcaa.usersmanagement.domain.valueobject.UserName;
 import com.jcaa.usersmanagement.domain.valueobject.UserPassword;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.dto.UserPersistenceDto;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.entity.UserEntity;
-import lombok.experimental.UtilityClass;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Clean Code - Regla 4: Uso de @UtilityClass para mappers manuales.
- * Clean Code - Regla 13: Aunque MapStruct es el estándar, este mapper manual
- * se organiza como una utilidad pura para evitar instanciación innecesaria.
+ * Mapper para transformar datos de usuario entre las capas de persistencia y dominio.
+ * Cumple con la Regla 4: Uso de instancia en lugar de métodos estáticos.
  */
-@UtilityClass
 public class UserPersistenceMapper {
 
-  public static UserPersistenceDto fromModelToDto(final UserModel user) {
-    // Regla 14 (Ley de Deméter): Se accede a los datos del modelo.
-    // Nota: En un refactor profundo, el UserModel debería proveer estos strings directamente.
+  public UserPersistenceMapper() {
+    // Constructor público para permitir la instanciación
+  }
+
+  public UserPersistenceDto fromModelToDto(UserModel user) {
     return new UserPersistenceDto(
             user.getId().value(),
             user.getName().value(),
@@ -38,36 +36,32 @@ public class UserPersistenceMapper {
             null);
   }
 
-  public static UserEntity fromResultSetToEntity(final ResultSet resultSet) throws SQLException {
-    return new UserEntity(
-            resultSet.getString("id"),
-            resultSet.getString("name"),
-            resultSet.getString("email"),
-            resultSet.getString("password"),
-            resultSet.getString("role"),
-            resultSet.getString("status"),
-            resultSet.getString("created_at"),
-            resultSet.getString("updated_at"));
-  }
-
-  public static UserModel fromEntityToModel(final UserEntity entity) {
+  public UserModel fromEntityToModel(UserEntity entity) {
     return new UserModel(
             new UserId(entity.id()),
             new UserName(entity.name()),
             new UserEmail(entity.email()),
             UserPassword.fromHash(entity.password()),
-            UserRole.fromString(entity.role()),
-            UserStatus.fromString(entity.status()));
+            UserRole.valueOf(entity.role()),
+            UserStatus.valueOf(entity.status()));
   }
 
-  public static UserModel fromResultSetToModel(final ResultSet resultSet) throws SQLException {
-    return fromEntityToModel(fromResultSetToEntity(resultSet));
+  public UserEntity fromResultSetToEntity(ResultSet rs) throws SQLException {
+    return new UserEntity(
+            rs.getString("id"),
+            rs.getString("name"),
+            rs.getString("email"),
+            rs.getString("password"),
+            rs.getString("role"),
+            rs.getString("status"),
+            rs.getString("created_at"),
+            rs.getString("updated_at"));
   }
 
-  public static List<UserModel> fromResultSetToModelList(final ResultSet resultSet) throws SQLException {
+  public List<UserModel> fromResultSetToModelList(ResultSet rs) throws SQLException {
     final List<UserModel> users = new ArrayList<>();
-    while (resultSet.next()) {
-      users.add(fromResultSetToModel(resultSet));
+    while (rs.next()) {
+      users.add(fromEntityToModel(fromResultSetToEntity(rs)));
     }
     return users;
   }

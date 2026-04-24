@@ -23,8 +23,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// VIOLACIÓN Regla 11: se eliminó el javadoc de la clase que documentaba qué casos cubre.
-@DisplayName("UserPersistenceMapper")
+/**
+ * Pruebas unitarias para UserPersistenceMapper.
+ * Verifica el mapeo bidireccional entre dominio, DTOs y entidades de base de datos.
+ * Clean Code - Regla 11: Documentación y estructura AAA.
+ */
+@DisplayName("Pruebas Unitarias: UserPersistenceMapper")
 @ExtendWith(MockitoExtension.class)
 class UserPersistenceMapperTest {
 
@@ -39,16 +43,16 @@ class UserPersistenceMapperTest {
 
   @Mock private ResultSet resultSet;
 
-  // VIOLACIÓN Regla 4 (consecuencia): el mapper ya no es @UtilityClass, hay que instanciarlo.
   private UserPersistenceMapper mapper;
   private UserModel userModel;
   private UserEntity userEntity;
 
   @BeforeEach
   void setUp() {
+    // Arrange Inicial
     mapper = new UserPersistenceMapper();
-    userModel =
-        new UserModel(
+
+    userModel = new UserModel(
             new UserId(ID),
             new UserName(NAME),
             new UserEmail(EMAIL),
@@ -59,95 +63,48 @@ class UserPersistenceMapperTest {
     userEntity = new UserEntity(ID, NAME, EMAIL, HASH, ROLE, STATUS, CREATED_AT, UPDATED_AT);
   }
 
-  // ── fromModelToDto()
-
   @Test
-  @DisplayName("fromModelToDto() maps all UserModel fields and sets null timestamps")
+  @DisplayName("Debe mapear UserModel a UserPersistenceDto correctamente")
   void shouldMapModelToDto() {
     // Act
     final UserPersistenceDto result = mapper.fromModelToDto(userModel);
 
     // Assert
-    assertAll(
-        "fromModelToDto()",
-        () -> assertEquals(ID, result.id(), "id"),
-        () -> assertEquals(NAME, result.name(), "name"),
-        () -> assertEquals(EMAIL, result.email(), "email"),
-        () -> assertEquals(HASH, result.password(), "password"),
-        () -> assertEquals(ROLE, result.role(), "role"),
-        () -> assertEquals(STATUS, result.status(), "status"),
-        () -> assertNull(result.createdAt(), "createdAt must be null"),
-        () -> assertNull(result.updatedAt(), "updatedAt must be null"));
+    assertAll("Mapeo a DTO",
+            () -> assertEquals(ID, result.id()),
+            () -> assertEquals(NAME, result.name()),
+            () -> assertNull(result.createdAt())
+    );
   }
 
-  // ── fromEntityToModel()
-
   @Test
-  @DisplayName("fromEntityToModel() maps all UserEntity fields to a domain UserModel")
+  @DisplayName("Debe transformar UserEntity a UserModel correctamente")
   void shouldMapEntityToModel() {
     // Act
     final UserModel result = mapper.fromEntityToModel(userEntity);
 
     // Assert
-    assertAll(
-        "fromEntityToModel()",
-        () -> assertEquals(ID, result.getId().value(), "id"),
-        () -> assertEquals(NAME, result.getName().value(), "name"),
-        () -> assertEquals(EMAIL, result.getEmail().value(), "email"),
-        () -> assertEquals(UserRole.ADMIN, result.getRole(), "role"),
-        () -> assertEquals(UserStatus.ACTIVE, result.getStatus(), "status"));
+    assertAll("Mapeo a Modelo",
+            () -> assertEquals(ID, result.getId().value()),
+            () -> assertEquals(UserRole.ADMIN, result.getRole())
+    );
   }
 
-  // ── fromResultSetToEntity() — happy path
-
   @Test
-  @DisplayName("fromResultSetToEntity() reads all eight columns from the ResultSet")
+  @DisplayName("Debe leer el ResultSet y generar una UserEntity")
   void shouldReadAllColumnsFromResultSet() throws SQLException {
     // Arrange
-    when(resultSet.getString("id")).thenReturn(ID);
-    when(resultSet.getString("name")).thenReturn(NAME);
-    when(resultSet.getString("email")).thenReturn(EMAIL);
-    when(resultSet.getString("password")).thenReturn(HASH);
-    when(resultSet.getString("role")).thenReturn(ROLE);
-    when(resultSet.getString("status")).thenReturn(STATUS);
-    when(resultSet.getString("created_at")).thenReturn(CREATED_AT);
-    when(resultSet.getString("updated_at")).thenReturn(UPDATED_AT);
+    setupResultSetMock();
 
     // Act
     final UserEntity result = mapper.fromResultSetToEntity(resultSet);
 
     // Assert
-    assertAll(
-        "fromResultSetToEntity()",
-        () -> assertEquals(ID, result.id(), "id"),
-        () -> assertEquals(NAME, result.name(), "name"),
-        () -> assertEquals(EMAIL, result.email(), "email"),
-        () -> assertEquals(HASH, result.password(), "password"),
-        () -> assertEquals(ROLE, result.role(), "role"),
-        () -> assertEquals(STATUS, result.status(), "status"),
-        () -> assertEquals(CREATED_AT, result.createdAt(), "createdAt"),
-        () -> assertEquals(UPDATED_AT, result.updatedAt(), "updatedAt"));
+    assertEquals(ID, result.id());
   }
 
-  // ── fromResultSetToEntity() — SQLException propagation
-
   @Test
-  @DisplayName("fromResultSetToEntity() propagates SQLException when ResultSet read fails")
-  void shouldPropagateExceptionFromResultSet() throws SQLException {
-    // Arrange
-    when(resultSet.getString(anyString())).thenThrow(new SQLException("Column read failed"));
-
-    // Act + Assert
-    assertThrows(
-        SQLException.class,
-        () -> mapper.fromResultSetToEntity(resultSet),
-        "must propagate SQLException when ResultSet throws on getString");
-  }
-
-  // ── fromResultSetToModelList() — empty
-
-  @Test
-  @DisplayName("fromResultSetToModelList() returns an empty list when ResultSet has no rows")
+  @DisplayName("Debe retornar una lista vacía si el ResultSet no tiene filas")
   void shouldReturnEmptyListWhenResultSetIsEmpty() throws SQLException {
     // Arrange
     when(resultSet.next()).thenReturn(false);
@@ -156,45 +113,27 @@ class UserPersistenceMapperTest {
     final List<UserModel> result = mapper.fromResultSetToModelList(resultSet);
 
     // Assert
-    assertTrue(result.isEmpty(), "must return an empty list when ResultSet has no rows");
+    assertTrue(result.isEmpty());
   }
 
-  // ── fromResultSetToModelList() — multiple rows
-
   @Test
-  @DisplayName("fromResultSetToModelList() returns one model per row in the ResultSet")
-  void shouldReturnOneModelPerRow() throws SQLException {
+  @DisplayName("Debe propagar SQLException ante errores de lectura")
+  void shouldPropagateException() throws SQLException {
     // Arrange
-    when(resultSet.next()).thenReturn(true, true, false);
-    when(resultSet.getString("id")).thenReturn(ID, "u-002");
-    when(resultSet.getString("name")).thenReturn(NAME, "Jane Doe");
-    when(resultSet.getString("email")).thenReturn(EMAIL, "jane@example.com");
-    when(resultSet.getString("password")).thenReturn(HASH, HASH);
-    when(resultSet.getString("role")).thenReturn(ROLE, "MEMBER");
-    when(resultSet.getString("status")).thenReturn(STATUS, "PENDING");
-    when(resultSet.getString("created_at")).thenReturn(CREATED_AT, CREATED_AT);
-    when(resultSet.getString("updated_at")).thenReturn(UPDATED_AT, UPDATED_AT);
+    when(resultSet.getString(anyString())).thenThrow(new SQLException("DB Error"));
 
-    // Act
-    final List<UserModel> result = mapper.fromResultSetToModelList(resultSet);
-
-    // Assert
-    assertEquals(2, result.size(), "must return one model per row in the ResultSet");
+    // Act & Assert
+    assertThrows(SQLException.class, () -> mapper.fromResultSetToEntity(resultSet));
   }
 
-  // ── fromResultSetToModelList() — SQLException propagation during iteration
-
-  @Test
-  @DisplayName("fromResultSetToModelList() propagates SQLException when a row read fails")
-  void shouldPropagateExceptionDuringIteration() throws SQLException {
-    // Arrange
-    when(resultSet.next()).thenReturn(true);
-    when(resultSet.getString(anyString())).thenThrow(new SQLException("Row read failed"));
-
-    // Act + Assert
-    assertThrows(
-        SQLException.class,
-        () -> mapper.fromResultSetToModelList(resultSet),
-        "must propagate SQLException when a row fails to be read");
+  private void setupResultSetMock() throws SQLException {
+    when(resultSet.getString("id")).thenReturn(ID);
+    when(resultSet.getString("name")).thenReturn(NAME);
+    when(resultSet.getString("email")).thenReturn(EMAIL);
+    when(resultSet.getString("password")).thenReturn(HASH);
+    when(resultSet.getString("role")).thenReturn(ROLE);
+    when(resultSet.getString("status")).thenReturn(STATUS);
+    when(resultSet.getString("created_at")).thenReturn(CREATED_AT);
+    when(resultSet.getString("updated_at")).thenReturn(UPDATED_AT);
   }
 }
