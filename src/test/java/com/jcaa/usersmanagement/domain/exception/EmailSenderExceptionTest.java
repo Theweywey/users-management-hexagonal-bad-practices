@@ -6,51 +6,53 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests para EmailSenderException.
- *
- * <p>De paso cubre el constructor de dos argumentos de {@code DomainException} (abstracta),
- * alcanzable sólo a través de {@code becauseSendFailed(cause)}.
+ * Pruebas unitarias para EmailSenderException.
+ * <p>Verifica que los mensajes de error se formateen correctamente y que la excepción
+ * encapsule adecuadamente las causas originales (Throwable).
+ * * Clean Code - Regla 11: Estructura AAA y aserciones expresivas.
+ * Clean Code - Regla 10: Uso de constantes para datos de prueba.
  */
-@DisplayName("EmailSenderException")
+@DisplayName("Pruebas Unitarias: EmailSenderException")
 class EmailSenderExceptionTest {
 
-  // ── becauseSmtpFailed()
+  // Regla 10: Constantes para evitar Strings mágicos en los tests
+  private static final String DESTINATION_EMAIL = "user@example.com";
+  private static final String SMTP_ERROR = "Connection refused";
+  private static final String IO_ERROR_MSG = "IO error";
 
   @Test
-  @DisplayName("becauseSmtpFailed() debe formatear el mensaje incluyendo el email y el error SMTP")
+  @DisplayName("Debe formatear el mensaje incluyendo el email y el error SMTP específico")
   void shouldFormatMessageWithEmailAndSmtpError() {
     // Arrange
-    final String destinationEmail = "user@example.com";
-    final String smtpError = "Connection refused";
+    // Los datos provienen de las constantes de clase
 
     // Act
     final String message =
-        EmailSenderException.becauseSmtpFailed(destinationEmail, smtpError).getMessage();
+            EmailSenderException.becauseSmtpFailed(DESTINATION_EMAIL, SMTP_ERROR).getMessage();
 
     // Assert
     assertAll(
-        "becauseSmtpFailed",
-        () -> assertTrue(message.contains(destinationEmail), "el mensaje debe contener el email"),
-        () -> assertTrue(message.contains(smtpError), "el mensaje debe contener el error SMTP"));
+            "Verificación de formato de mensaje SMTP",
+            () -> assertTrue(message.contains(DESTINATION_EMAIL), "El mensaje debe incluir el email de destino"),
+            () -> assertTrue(message.contains(SMTP_ERROR), "El mensaje debe incluir la descripción del error SMTP")
+    );
   }
 
-  // ── becauseSendFailed()
-
   @Test
-  @DisplayName("becauseSendFailed() debe encapsular la causa y producir un mensaje no vacío")
+  @DisplayName("Debe encapsular la causa original y producir un mensaje descriptivo")
   void shouldWrapCauseAndProduceNonBlankMessage() {
     // Arrange
-    final Throwable cause = new RuntimeException("IO error");
+    final Throwable cause = new RuntimeException(IO_ERROR_MSG);
 
     // Act
     final EmailSenderException exception = EmailSenderException.becauseSendFailed(cause);
 
     // Assert
     assertAll(
-        "becauseSendFailed",
-        () -> assertSame(cause, exception.getCause(), "debe encapsular la causa original"),
-        () ->
-            assertFalse(
-                exception.getMessage().isBlank(), "el mensaje por defecto no debe estar vacío"));
+            "Verificación de encapsulamiento de causa",
+            () -> assertSame(cause, exception.getCause(), "Debe mantener la referencia a la causa original"),
+            () -> assertNotNull(exception.getMessage(), "El mensaje no debe ser nulo"),
+            () -> assertFalse(exception.getMessage().isBlank(), "El mensaje de error no debe estar vacío")
+    );
   }
 }
