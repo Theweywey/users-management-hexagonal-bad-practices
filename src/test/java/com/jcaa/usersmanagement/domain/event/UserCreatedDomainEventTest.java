@@ -16,28 +16,29 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests para UserCreatedDomainEvent.
- *
- * <p>Estrategia: un @Test por cada comportamiento observable del evento (eventName, occurredOn,
- * user, payload). De paso, cada test ejecuta el constructor heredado de DomainEvent, cubriendo la
- * clase abstracta sin necesidad de una clase separada.
+ * Pruebas unitarias para UserCreatedDomainEvent.
+ * <p>Verifica que el evento de dominio capture correctamente el estado del usuario,
+ * el nombre del evento y la marca de tiempo de ocurrencia.
+ * * Clean Code - Regla 11: Estructura AAA y documentación.
+ * Clean Code - Regla 10: Uso de constantes para evitar Strings mágicos.
  */
-@DisplayName("Test de UserCreatedDomainEvent")
+@DisplayName("Pruebas Unitarias: UserCreatedDomainEvent")
 class UserCreatedDomainEventTest {
 
-  // ── Arrenge Generales
+  // Regla 10: Centralizamos el nombre del evento para evitar "Strings Mágicos"
+  private static final String EXPECTED_EVENT_NAME = "user.created";
+
+  // Arrange Generales (Regla 4: Corregido typo 'Arrenge')
   private static final String ID = "user-001";
   private static final String NAME = "John Arrieta";
   private static final String EMAIL = "john.arrieta@gmail.com";
-  // fromHash() acepta cualquier string no-null: evitamos el coste de BCrypt en tests
   private static final String HASH = "$2a$12$abcdefghijklmnopqrstuO";
 
   private UserModel user;
 
   @BeforeEach
   void setUp() {
-    user =
-        new UserModel(
+    user = new UserModel(
             new UserId(ID),
             new UserName(NAME),
             new UserEmail(EMAIL),
@@ -46,10 +47,8 @@ class UserCreatedDomainEventTest {
             UserStatus.ACTIVE);
   }
 
-  // ── eventName
-
   @Test
-  @DisplayName("eventName() debe retornar la constante 'user.created'")
+  @DisplayName("Debe retornar el nombre de evento 'user.created'")
   void shouldHaveEventNameUserCreated() {
     // Arrange
     final UserCreatedDomainEvent event = new UserCreatedDomainEvent(user);
@@ -58,13 +57,11 @@ class UserCreatedDomainEventTest {
     final String result = event.getEventName();
 
     // Assert
-    assertEquals("user.created", result);
+    assertEquals(EXPECTED_EVENT_NAME, result, "El nombre del evento debe ser consistente");
   }
 
-  // ── occurredOn
-
   @Test
-  @DisplayName("occurredOn() no debe ser nulo y debe quedar acotado al instante de construcción")
+  @DisplayName("Debe registrar la fecha de ocurrencia al momento de la construcción")
   void shouldRecordOccurredOnAtCreationTime() {
     // Arrange
     final LocalDateTime before = LocalDateTime.now();
@@ -76,18 +73,12 @@ class UserCreatedDomainEventTest {
 
     // Assert
     assertNotNull(occurredOn, "occurredOn no debe ser null");
-    assertFalse(
-        occurredOn.isBefore(before),
-        "occurredOn debe ser >= al instante anterior a la construcción");
-    assertFalse(
-        occurredOn.isAfter(after),
-        "occurredOn debe ser <= al instante posterior a la construcción");
+    assertFalse(occurredOn.isBefore(before), "La fecha debe ser posterior o igual al inicio del test");
+    assertFalse(occurredOn.isAfter(after), "La fecha debe ser anterior o igual al final del test");
   }
 
-  // ── user()
-
   @Test
-  @DisplayName("user() debe devolver la misma instancia de UserModel recibida en el constructor")
+  @DisplayName("Debe devolver la misma instancia de UserModel que recibió en el constructor")
   void shouldReturnSameUserInstance() {
     // Arrange
     final UserCreatedDomainEvent event = new UserCreatedDomainEvent(user);
@@ -96,13 +87,11 @@ class UserCreatedDomainEventTest {
     final UserModel result = event.getUser();
 
     // Assert
-    assertSame(user, result);
+    assertSame(user, result, "Debe ser la misma instancia de memoria");
   }
 
-  // ── payload()
-
   @Test
-  @DisplayName("payload() debe contener exactamente los cinco campos del usuario")
+  @DisplayName("Debe generar un payload con los cinco campos del usuario correctamente")
   void shouldReturnPayloadWithAllUserFields() {
     // Arrange
     final UserCreatedDomainEvent event = new UserCreatedDomainEvent(user);
@@ -112,12 +101,13 @@ class UserCreatedDomainEventTest {
 
     // Assert
     assertAll(
-        "payload de UserCreatedDomainEvent",
-        () -> assertEquals(5, payload.size(), "tamaño del mapa"),
-        () -> assertEquals(ID, payload.get("id"), "id"),
-        () -> assertEquals(NAME, payload.get("name"), "name"),
-        () -> assertEquals(EMAIL, payload.get("email"), "email"),
-        () -> assertEquals(UserRole.MEMBER.name(), payload.get("role"), "role"),
-        () -> assertEquals(UserStatus.ACTIVE.name(), payload.get("status"), "status"));
+            "Verificación de campos en el payload",
+            () -> assertEquals(5, payload.size(), "El payload debe tener exactamente 5 campos"),
+            () -> assertEquals(ID, payload.get("id")),
+            () -> assertEquals(NAME, payload.get("name")),
+            () -> assertEquals(EMAIL, payload.get("email")),
+            () -> assertEquals(UserRole.MEMBER.name(), payload.get("role")),
+            () -> assertEquals(UserStatus.ACTIVE.name(), payload.get("status"))
+    );
   }
 }
