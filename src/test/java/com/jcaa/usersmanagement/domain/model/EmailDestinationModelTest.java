@@ -6,77 +6,83 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests para EmailDestinationModel.
- *
- * <p>Verifica el camino feliz (todos los getters) y los cuatro puntos de validación del
- * constructor: cada campo tiene su propia llamada a {@code validateNotBlank}, por lo que se
- * necesita un test por campo para alcanzar esa instrucción y ejercer las dos ramas (null y blank).
+ * Pruebas unitarias para EmailDestinationModel.
+ * <p>Verifica la integridad de los datos de envío de correo, asegurando que:
+ * <ul>
+ * <li>Los objetos se construyan correctamente con datos válidos.</li>
+ * <li>Cada campo (email, nombre, asunto y cuerpo) sea validado contra nulos o vacíos.</li>
+ * </ul>
+ * Clean Code - Regla 11: Estructura AAA y validación exhaustiva de contratos.
+ * Clean Code - Regla 10: Uso de constantes para centralizar datos de prueba.
  */
-@DisplayName("EmailDestinationModel")
+@DisplayName("Pruebas Unitarias: EmailDestinationModel")
 class EmailDestinationModelTest {
 
-  // ── Arrange
+  // Regla 10: Datos de prueba centralizados
   private static final String EMAIL = "dest@example.com";
   private static final String NAME = "Recipient Name";
   private static final String SUBJECT = "Welcome";
   private static final String BODY = "Hello, welcome to the platform.";
 
-  // ── Happy path
-
   @Test
-  @DisplayName("Constructor debe preservar los cuatro campos cuando los datos son válidos")
+  @DisplayName("Debe preservar todos los campos cuando se construye con datos válidos")
   void shouldCreateModelWithAllValidFields() {
-    // Arrange + Act
+    // Arrange & Act
     final EmailDestinationModel model = new EmailDestinationModel(EMAIL, NAME, SUBJECT, BODY);
 
     // Assert
     assertAll(
-        "campos de EmailDestinationModel",
-        () -> assertEquals(EMAIL, model.getDestinationEmail(), "destinationEmail"),
-        () -> assertEquals(NAME, model.getDestinationName(), "destinationName"),
-        () -> assertEquals(SUBJECT, model.getSubject(), "subject"),
-        () -> assertEquals(BODY, model.getBody(), "body"));
+            "Verificación de integridad de los campos del modelo",
+            () -> assertEquals(EMAIL, model.getDestinationEmail(), "El email de destino no coincide"),
+            () -> assertEquals(NAME, model.getDestinationName(), "El nombre de destino no coincide"),
+            () -> assertEquals(SUBJECT, model.getSubject(), "El asunto no coincide"),
+            () -> assertEquals(BODY, model.getBody(), "El cuerpo del mensaje no coincide")
+    );
   }
 
-  // ── Validaciones de campo
-  // Cada test llega a un punto de validación distinto en el constructor:
-  // campo 1 (destinationEmail), campo 2 (destinationName), etc.
-
   @Test
-  @DisplayName("Constructor debe lanzar NullPointerException cuando destinationEmail es null")
+  @DisplayName("Debe lanzar NullPointerException cuando el email de destino es nulo")
   void shouldThrowNpeWhenDestinationEmailIsNull() {
-    // Arrange — campo 1 inválido: falla en la primera llamada a validateNotBlank
     // Act & Assert
+    // Regla 11: Se documenta que el fallo ocurre en el primer punto de validación
     assertThrows(
-        NullPointerException.class, () -> new EmailDestinationModel(null, NAME, SUBJECT, BODY));
+            NullPointerException.class,
+            () -> new EmailDestinationModel(null, NAME, SUBJECT, BODY),
+            "Se esperaba NPE al pasar email nulo"
+    );
   }
 
   @Test
-  @DisplayName(
-      "Constructor debe lanzar IllegalArgumentException cuando destinationName está en blanco")
+  @DisplayName("Debe lanzar IllegalArgumentException cuando el nombre de destino está en blanco")
   void shouldThrowIaeWhenDestinationNameIsBlank() {
-    // Arrange — campo 1 válido, campo 2 en blanco: falla en la segunda llamada
     // Act & Assert
+    // Regla 11: Se documenta que el fallo ocurre tras validar el email
     assertThrows(
-        IllegalArgumentException.class,
-        () -> new EmailDestinationModel(EMAIL, "   ", SUBJECT, BODY));
+            IllegalArgumentException.class,
+            () -> new EmailDestinationModel(EMAIL, "   ", SUBJECT, BODY),
+            "Se esperaba IAE al pasar nombre en blanco"
+    );
   }
 
   @Test
-  @DisplayName("Constructor debe lanzar NullPointerException cuando subject es null")
+  @DisplayName("Debe lanzar NullPointerException cuando el asunto es nulo")
   void shouldThrowNpeWhenSubjectIsNull() {
-    // Arrange — campos 1 y 2 válidos, campo 3 null: falla en la tercera llamada
     // Act & Assert
     assertThrows(
-        NullPointerException.class, () -> new EmailDestinationModel(EMAIL, NAME, null, BODY));
+            NullPointerException.class,
+            () -> new EmailDestinationModel(EMAIL, NAME, null, BODY),
+            "Se esperaba NPE al pasar asunto nulo"
+    );
   }
 
   @Test
-  @DisplayName("Constructor debe lanzar IllegalArgumentException cuando body está vacío")
+  @DisplayName("Debe lanzar IllegalArgumentException cuando el cuerpo del mensaje está vacío")
   void shouldThrowIaeWhenBodyIsEmpty() {
-    // Arrange — campos 1, 2 y 3 válidos, campo 4 vacío: falla en la cuarta llamada
     // Act & Assert
     assertThrows(
-        IllegalArgumentException.class, () -> new EmailDestinationModel(EMAIL, NAME, SUBJECT, ""));
+            IllegalArgumentException.class,
+            () -> new EmailDestinationModel(EMAIL, NAME, SUBJECT, ""),
+            "Se esperaba IAE al pasar cuerpo vacío"
+    );
   }
 }
