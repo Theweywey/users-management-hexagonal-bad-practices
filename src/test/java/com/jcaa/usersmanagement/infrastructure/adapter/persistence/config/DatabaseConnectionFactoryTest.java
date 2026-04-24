@@ -17,13 +17,16 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Pruebas unitarias para la fábrica de conexiones de base de datos.
- * Verifica la creación exitosa de conexiones y el manejo de excepciones SQL.
- *
- * Clean Code - Regla 11: Se añade Javadoc descriptivo a la clase.
- * Clean Code - Regla 4: Se eliminan las instancias de la fábrica al ser una @UtilityClass.
+ * Pruebas unitarias para DatabaseConnectionFactory.
+ * <p>Verifica la correcta integración con el DriverManager de JDBC, cubriendo:
+ * <ul>
+ * <li>Creación exitosa de conexiones a partir de la configuración.</li>
+ * <li>Manejo de errores y envoltura de SQLException en PersistenceException.</li>
+ * </ul>
+ * Clean Code - Regla 11: Documentación de casos y estructura AAA.
+ * Clean Code - Regla 4: Acceso estático a la fábrica (@UtilityClass).
  */
-@DisplayName("DatabaseConnectionFactory")
+@DisplayName("Pruebas Unitarias: DatabaseConnectionFactory")
 @ExtendWith(MockitoExtension.class)
 class DatabaseConnectionFactoryTest {
 
@@ -41,37 +44,40 @@ class DatabaseConnectionFactoryTest {
   @BeforeEach
   void setUp() {
     config = new DatabaseConfig(HOST, PORT, DB_NAME, USERNAME, PASSWORD);
-    // Ya no instanciamos la fábrica (Regla 4)
   }
 
   @Test
-  @DisplayName("createConnection() returns the connection provided by DriverManager")
+  @DisplayName("Debe retornar la conexión cuando DriverManager se conecta con éxito")
   void shouldReturnConnectionWhenDriverManagerSucceeds() {
+    // Arrange
     try (final MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class)) {
       mockedDriverManager
               .when(() -> DriverManager.getConnection(any(), any(), any()))
               .thenReturn(mockConnection);
 
-      // Llamada estática directa a la clase (Regla 4)
+      // Act
       final Connection result = DatabaseConnectionFactory.createConnection(config);
 
-      assertSame(mockConnection, result, "must return the connection provided by DriverManager");
+      // Assert
+      assertSame(mockConnection, result, "Debe retornar exactamente la instancia provista por el driver");
     }
   }
 
   @Test
-  @DisplayName("createConnection() throws PersistenceException when DriverManager fails")
+  @DisplayName("Debe lanzar PersistenceException cuando falla la conexión JDBC")
   void shouldThrowPersistenceExceptionWhenDriverManagerFails() {
+    // Arrange
     final SQLException cause = new SQLException("Connection refused");
     try (final MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class)) {
       mockedDriverManager
               .when(() -> DriverManager.getConnection(any(), any(), any()))
               .thenThrow(cause);
 
+      // Act & Assert
       assertThrows(
               PersistenceException.class,
               () -> DatabaseConnectionFactory.createConnection(config),
-              "must throw PersistenceException when DriverManager throws SQLException");
+              "Se esperaba PersistenceException ante un error de red o credenciales");
     }
   }
 }
