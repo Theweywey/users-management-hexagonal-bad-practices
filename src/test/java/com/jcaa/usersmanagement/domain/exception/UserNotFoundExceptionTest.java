@@ -1,32 +1,39 @@
 package com.jcaa.usersmanagement.domain.exception;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests para UserNotFoundException.
- *
- * <p>La excepción no tiene lógica de dominio propia; su valor está en el mensaje que produce: el id
- * del usuario no encontrado debe aparecer explícitamente para que la capa superior pueda construir
- * una respuesta de error útil. Estos tests existirán hasta que la capa de aplicación sea
- * desarrollada y la ejerza como efecto secundario de sus propios tests.
+ * Pruebas unitarias para UserNotFoundException.
+ * <p>Asegura que el mensaje de error contenga el identificador del usuario
+ * para facilitar el diagnóstico de errores en las capas superiores.
+ * * Clean Code - Regla 11: Estructura AAA y documentación.
+ * Clean Code - Regla 10: Uso de constantes para datos de prueba.
  */
-@DisplayName("UserNotFoundException")
+@DisplayName("Pruebas Unitarias: UserNotFoundException")
 class UserNotFoundExceptionTest {
 
+  // Regla 10: Constante para evitar "Magic Strings"
+  private static final String MISSING_USER_ID = "user-404";
+
   @Test
-  @DisplayName("becauseIdWasNotFound() debe incluir el id del usuario en el mensaje de error")
+  @DisplayName("Debe incluir el ID del usuario en el mensaje cuando no se encuentra")
   void shouldIncludeUserIdInMessage() {
     // Arrange
-    final String userId = "user-404";
+    // El ID se obtiene de la constante MISSING_USER_ID
 
     // Act
-    final String message = UserNotFoundException.becauseIdWasNotFound(userId).getMessage();
+    final String message = UserNotFoundException.becauseIdWasNotFound(MISSING_USER_ID).getMessage();
 
     // Assert
-    assertTrue(
-        message.contains(userId), "el mensaje debe identificar el id del usuario no encontrado");
+    // Regla 11: Aserciones expresivas con assertAll
+    assertAll(
+            "Verificación de contenido del mensaje de excepción",
+            () -> assertNotNull(message, "El mensaje no debe ser nulo"),
+            () -> assertTrue(message.contains(MISSING_USER_ID),
+                    "El mensaje de error debe contener explícitamente el ID del usuario buscado")
+    );
   }
 }
