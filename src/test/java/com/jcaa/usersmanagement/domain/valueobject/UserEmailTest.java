@@ -8,84 +8,91 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+/**
+ * Pruebas unitarias para el Value Object UserEmail.
+ * <p>Verifica la integridad de los correos electrónicos mediante:
+ * <ul>
+ * <li>Normalización (limpieza de espacios y conversión a minúsculas).</li>
+ * <li>Validación de formato según estándares de negocio.</li>
+ * <li>Protección contra valores nulos o vacíos.</li>
+ * </ul>
+ * Clean Code - Regla 11: Estructura AAA y uso de pruebas parametrizadas descriptivas.
+ */
+@DisplayName("Pruebas Unitarias: UserEmail")
 class UserEmailTest {
 
   @Test
-  @DisplayName("Normaliza email con trim y lowercase")
+  @DisplayName("Debe normalizar el email eliminando espacios y convirtiendo a minúsculas")
   void shouldNormalizeEmail() {
     // Arrange
-    final String correctEmail = "john.arrieta@gmail.com";
-    final String email = "  john.arrieta@gmail.com  ";
+    final String rawEmail = "  JOHN.ARRIETA@gmail.com  ";
+    final String expectedEmail = "john.arrieta@gmail.com";
 
     // Act
-    final UserEmail userEmail = new UserEmail(email);
+    final UserEmail userEmail = new UserEmail(rawEmail);
 
     // Assert
-    assertEquals(correctEmail, userEmail.value());
+    assertEquals(expectedEmail, userEmail.value(), "El email debe estar normalizado (trim y lowercase)");
   }
 
   @Test
-  @DisplayName("Valida que el email no este vacio")
-  void shouldValidateEmailIsNotEmpty() {
+  @DisplayName("Debe lanzar InvalidUserEmailException cuando el email está en blanco")
+  void shouldThrowInvalidUserEmailExceptionWhenEmailIsBlank() {
     // Arrange
-    final String email = "   ";
+    final String blankEmail = "   ";
 
     // Act & Assert
-    assertThrows(InvalidUserEmailException.class, () -> new UserEmail(email));
+    assertThrows(InvalidUserEmailException.class, () -> new UserEmail(blankEmail),
+            "Se esperaba excepción por email con solo espacios");
   }
 
   @Test
-  @DisplayName("Valida que el email tenga un formato correcto")
-  void shouldValidateEmailFormat() {
-    // Arrange
-    final String email = "johnarroeta-arroba-gmail.com";
-    // Act y Assert
-    assertThrows(InvalidUserEmailException.class, () -> new UserEmail(email));
-  }
-
-  @Test
-  @DisplayName("Valida que el email creado sea igual al generado en formato string")
-  void shouldValidateEmailToString() {
-    // Arrange
-    final String email = "john.arrieta@gmail.com";
+  @DisplayName("Debe lanzar NullPointerException cuando el email es nulo")
+  void shouldThrowNullPointerExceptionWhenEmailIsNull() {
     // Act & Assert
-    assertEquals(email, new UserEmail(email).toString());
+    assertThrows(NullPointerException.class, () -> new UserEmail(null),
+            "Se esperaba NPE al pasar un objeto nulo");
   }
 
   @Test
-  @DisplayName("Valida que el email no sea nulo")
-  void shouldValidateEmailIsNotNull() {
+  @DisplayName("Debe retornar el valor del email al llamar a toString()")
+  void shouldReturnEmailValueOnToString() {
+    // Arrange
+    final String emailValue = "test@example.com";
+    final UserEmail userEmail = new UserEmail(emailValue);
+
     // Act & Assert
-    assertThrows(NullPointerException.class, () -> new UserEmail(null));
+    assertEquals(emailValue, userEmail.toString(), "toString() debe retornar el valor bruto del email");
   }
 
-  // ------ Test con parameters --------
+  // ------ Pruebas Parametrizadas (Formatos) --------
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "john.arrieta@gmail.com",
-        "john-arrieta_arreita@gmail.com.co",
-        "john1234567arreita@gmail.com"
-      })
-  @DisplayName("Valida que el email tenga un formato correcto con diferentes casos")
-  void shouldValidateEmailFormatWithParameters(String email) {
+  @ValueSource(strings = {
+          "john.arrieta@gmail.com",
+          "john-arrieta_arrieta@gmail.com.co",
+          "john1234567arrieta@gmail.com"
+  })
+  @DisplayName("Debe aceptar formatos de email válidos")
+  void shouldAcceptValidEmailFormats(String validEmail) {
     // Act & Assert
-    assertDoesNotThrow(() -> new UserEmail(email));
+    assertDoesNotThrow(() -> new UserEmail(validEmail),
+            "El formato de email '" + validEmail + "' debería ser considerado válido");
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "",
-        "johnarroetaarroba-gmail.com",
-        "john.arrieta@gmail",
-        "john.arrieta@.com",
-        "john arrieta@com"
-      })
-  @DisplayName("Valida que el email tenga un formato incorrecto con diferentes casos")
-  void shouldValidateEmailFormatWithInvalidParameters(String email) {
+  @ValueSource(strings = {
+          "johnarrieta-sin-arroba.com",
+          "john.arrieta@gmail",
+          "john.arrieta@.com",
+          "john arrieta@com",
+          "@",
+          "email..doblepunto@test.com"
+  })
+  @DisplayName("Debe lanzar InvalidUserEmailException para formatos de email inválidos")
+  void shouldThrowExceptionForInvalidEmailFormats(String invalidEmail) {
     // Act & Assert
-    assertThrows(InvalidUserEmailException.class, () -> new UserEmail(email));
+    assertThrows(InvalidUserEmailException.class, () -> new UserEmail(invalidEmail),
+            "El formato de email '" + invalidEmail + "' debería ser rechazado");
   }
 }
