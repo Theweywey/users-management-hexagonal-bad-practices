@@ -1,15 +1,16 @@
 package com.jcaa.usersmanagement.infrastructure.adapter.persistence.repository;
 
-import com.jcaa.usersmanagement.application.port.out.*;
-import com.jcaa.usersmanagement.domain.exception.UserNotFoundException;
+import com.jcaa.usersmanagement.application.port.out.DeleteUserPort;
+import com.jcaa.usersmanagement.application.port.out.GetAllUsersPort;
+import com.jcaa.usersmanagement.application.port.out.GetUserByEmailPort;
+import com.jcaa.usersmanagement.application.port.out.GetUserByIdPort;
+import com.jcaa.usersmanagement.application.port.out.SaveUserPort;
+import com.jcaa.usersmanagement.application.port.out.UpdateUserPort;
 import com.jcaa.usersmanagement.domain.model.UserModel;
 import com.jcaa.usersmanagement.domain.valueobject.UserEmail;
 import com.jcaa.usersmanagement.domain.valueobject.UserId;
-import com.jcaa.usersmanagement.infrastructure.adapter.persistence.dto.UserPersistenceDto;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.exception.PersistenceException;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.mapper.UserPersistenceMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,130 +19,115 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-@Log
-@RequiredArgsConstructor
-public final class UserRepositoryMySQL
-        implements SaveUserPort,
-        UpdateUserPort,
-        GetUserByIdPort,
-        GetUserByEmailPort,
-        GetAllUsersPort,
-        DeleteUserPort {
-
-  private static final String SQL_INSERT =
-          "INSERT INTO users (id, name, email, password, role, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
-
-  private static final String SQL_UPDATE =
-          "UPDATE users SET name = ?, email = ?, password = ?, role = ?, status = ?, updated_at = NOW() WHERE id = ?";
-
-  private static final String SQL_SELECT_BY_ID =
-          "SELECT id, name, email, password, role, status, created_at, updated_at FROM users WHERE id = ? LIMIT 1";
-
-  private static final String SQL_SELECT_BY_EMAIL =
-          "SELECT id, name, email, password, role, status, created_at, updated_at FROM users WHERE email = ? LIMIT 1";
-
-  private static final String SQL_SELECT_ALL =
-          "SELECT id, name, email, password, role, status, created_at, updated_at FROM users ORDER BY name ASC";
-
-  private static final String SQL_DELETE =
-          "DELETE FROM users WHERE id = ?";
+public class UserRepositoryMySQL implements SaveUserPort, UpdateUserPort, DeleteUserPort, GetUserByIdPort, GetUserByEmailPort, GetAllUsersPort {
 
   private final Connection connection;
+  private final UserPersistenceMapper mapper;
 
-  @Override
-  public UserModel save(final UserModel user) {
-    final UserPersistenceDto dto = UserPersistenceMapper.fromModelToDto(user);
-    executeSave(dto);
-    return findByIdOrFail(user.getId());
+  public UserRepositoryMySQL(Connection connection) {
+    this.connection = connection;
+    this.mapper = new UserPersistenceMapper();
   }
 
   @Override
-  public UserModel update(final UserModel user) {
-    final UserPersistenceDto dto = UserPersistenceMapper.fromModelToDto(user);
-    executeUpdate(dto);
-    return findByIdOrFail(user.getId());
-  }
+  public UserModel save(UserModel user) {
+    var dto = this.mapper.fromModelToDto(user);
+    String sql = "INSERT INTO users (id, name, email, password, role, status) VALUES (?, ?, ?, ?, ?, ?)";
 
-  @Override
-  public Optional<UserModel> getById(final UserId userId) {
-    try (final PreparedStatement statement = connection.prepareStatement(SQL_SELECT_BY_ID)) {
-      statement.setString(1, userId.value());
-      final ResultSet resultSet = statement.executeQuery();
+    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+      stmt.setString(1, dto.id());
+      stmt.setString(2, dto.name());
+      stmt.setString(3, dto.email());
+      stmt.setString(4, dto.password());
+      stmt.setString(5, dto.role());
+      stmt.setString(6, dto.status());
+      stmt.executeUpdate();
 
-      if (!resultSet.next()) {
-        return Optional.empty();
-      }
-      return Optional.of(UserPersistenceMapper.fromResultSetToModel(resultSet));
-    } catch (final SQLException exception) {
-      throw PersistenceException.becauseFindByIdFailed(userId.value(), exception);
+      return findByIdOrFail(user.getId());
+    } catch (SQLException e) {
+      throw new PersistenceException("Error al guardar usuario", e);
     }
   }
 
   @Override
-  public Optional<UserModel> getByEmail(final UserEmail email) {
-    try (final PreparedStatement statement = connection.prepareStatement(SQL_SELECT_BY_EMAIL)) {
-      statement.setString(1, email.value());
-      final ResultSet resultSet = statement.executeQuery();
+  public UserModel update(UserModel user) {
+    var dto = this.mapper.fromModelToDto(user);
+    String sql = "UPDATE users SET name = ?, email = ?, password = ?, role = ?, status = ? WHERE id = ?";
 
-      if (!resultSet.next()) {
+    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+      stmt.setString(1, dto.name());
+      stmt.setString(2, dto.email());
+      stmt.setString(3, dto.password());
+      stmt.setString(4, dto.role());
+      stmt.setString(5, dto.status());
+      stmt.setString(6, dto.id());
+      stmt.executeUpdate();
+
+      return findByIdOrFail(user.getId());
+    } catch (SQLException e) {
+      throw new PersistenceException("Error al actualizar usuario", e);
+    }
+  }
+
+  @Override
+  public void delete(UserId id) {
+    String sql = "DELETE FROM users WHERE id = ?";
+
+    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+      stmt.setString(1, id.value());
+      stmt.executeUpdate();
+    } catch (SQLException e) {
+      throw new PersistenceException("Error al eliminar usuario", e);
+    }
+  }
+
+  @Override
+  public Optional<UserModel> getById(UserId id) {
+    String sql = "SELECT * FROM users WHERE id = ?";
+
+    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+      stmt.setString(1, id.value());
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) {
+          return Optional.of(this.mapper.fromEntityToModel(this.mapper.fromResultSetToEntity(rs)));
+        }
         return Optional.empty();
       }
-      return Optional.of(UserPersistenceMapper.fromResultSetToModel(resultSet));
-    } catch (final SQLException exception) {
-      throw PersistenceException.becauseFindByEmailFailed(email.value(), exception);
+    } catch (SQLException e) {
+      throw new PersistenceException("Error al buscar usuario por ID", e);
+    }
+  }
+
+  @Override
+  public Optional<UserModel> getByEmail(UserEmail email) {
+    String sql = "SELECT * FROM users WHERE email = ?";
+
+    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+      stmt.setString(1, email.value());
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) {
+          return Optional.of(this.mapper.fromEntityToModel(this.mapper.fromResultSetToEntity(rs)));
+        }
+        return Optional.empty();
+      }
+    } catch (SQLException e) {
+      throw new PersistenceException("Error al buscar usuario por Email", e);
     }
   }
 
   @Override
   public List<UserModel> getAll() {
-    try (final PreparedStatement statement = connection.prepareStatement(SQL_SELECT_ALL)) {
-      final ResultSet resultSet = statement.executeQuery();
-      return UserPersistenceMapper.fromResultSetToModelList(resultSet);
-    } catch (final SQLException exception) {
-      throw PersistenceException.becauseFindAllFailed(exception);
+    String sql = "SELECT * FROM users";
+
+    try (PreparedStatement stmt = connection.prepareStatement(sql);
+         ResultSet rs = stmt.executeQuery()) {
+      return this.mapper.fromResultSetToModelList(rs);
+    } catch (SQLException e) {
+      throw new PersistenceException("Error al listar usuarios", e);
     }
   }
 
-  @Override
-  public void delete(final UserId userId) {
-    try (final PreparedStatement statement = connection.prepareStatement(SQL_DELETE)) {
-      statement.setString(1, userId.value());
-      statement.executeUpdate();
-    } catch (final SQLException exception) {
-      throw PersistenceException.becauseDeleteFailed(userId.value(), exception);
-    }
-  }
-
-  private void executeSave(final UserPersistenceDto dto) {
-    try (final PreparedStatement statement = connection.prepareStatement(SQL_INSERT)) {
-      statement.setString(1, dto.id());
-      statement.setString(2, dto.name());
-      statement.setString(3, dto.email());
-      statement.setString(4, dto.password());
-      statement.setString(5, dto.role());
-      statement.setString(6, dto.status());
-      statement.executeUpdate();
-    } catch (final SQLException exception) {
-      throw PersistenceException.becauseSaveFailed(dto.id(), exception);
-    }
-  }
-
-  private void executeUpdate(final UserPersistenceDto dto) {
-    try (final PreparedStatement statement = connection.prepareStatement(SQL_UPDATE)) {
-      statement.setString(1, dto.name());
-      statement.setString(2, dto.email());
-      statement.setString(3, dto.password());
-      statement.setString(4, dto.role());
-      statement.setString(5, dto.status());
-      statement.setString(6, dto.id());
-      statement.executeUpdate();
-    } catch (final SQLException exception) {
-      throw PersistenceException.becauseUpdateFailed(dto.id(), exception);
-    }
-  }
-
-  private UserModel findByIdOrFail(final UserId userId) {
-    return getById(userId)
-            .orElseThrow(() -> UserNotFoundException.becauseIdWasNotFound(userId.value()));
+  private UserModel findByIdOrFail(UserId id) {
+    return getById(id).orElseThrow(() -> new PersistenceException("Usuario no encontrado tras operación"));
   }
 }

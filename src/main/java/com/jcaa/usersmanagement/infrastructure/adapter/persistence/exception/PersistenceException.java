@@ -1,45 +1,15 @@
 package com.jcaa.usersmanagement.infrastructure.adapter.persistence.exception;
 
-public final class PersistenceException extends RuntimeException {
+/**
+ * Excepción personalizada para encapsular errores de la capa de persistencia.
+ */
+public class PersistenceException extends RuntimeException {
 
-  // Regla 10: Centralización de mensajes en constantes descriptivas
-  private static final String SAVE_FAILED_MSG = "Failed to save user with ID: '%s'.";
-  private static final String UPDATE_FAILED_MSG = "Failed to update user with ID: '%s'.";
-  private static final String FIND_BY_ID_FAILED_MSG = "Failed to find user with ID: '%s'.";
-  private static final String FIND_BY_EMAIL_FAILED_MSG = "Failed to find user with email: '%s'.";
-  private static final String FIND_ALL_FAILED_MSG = "Failed to retrieve all users.";
-  private static final String DELETE_FAILED_MSG = "Failed to delete user with ID: '%s'.";
-  private static final String CONNECTION_FAILED_MSG = "Could not establish database connection.";
+  public PersistenceException(String message) {
+    super(message);
+  }
 
-  private PersistenceException(final String message, final Throwable cause) {
+  public PersistenceException(String message, Throwable cause) {
     super(message, cause);
-  }
-
-  public static PersistenceException becauseSaveFailed(final String userId, final Throwable cause) {
-    return new PersistenceException(String.format(SAVE_FAILED_MSG, userId), cause);
-  }
-
-  public static PersistenceException becauseUpdateFailed(final String userId, final Throwable cause) {
-    return new PersistenceException(String.format(UPDATE_FAILED_MSG, userId), cause);
-  }
-
-  public static PersistenceException becauseFindByIdFailed(final String userId, final Throwable cause) {
-    return new PersistenceException(String.format(FIND_BY_ID_FAILED_MSG, userId), cause);
-  }
-
-  public static PersistenceException becauseFindByEmailFailed(final String email, final Throwable cause) {
-    return new PersistenceException(String.format(FIND_BY_EMAIL_FAILED_MSG, email), cause);
-  }
-
-  public static PersistenceException becauseFindAllFailed(final Throwable cause) {
-    return new PersistenceException(FIND_ALL_FAILED_MSG, cause);
-  }
-
-  public static PersistenceException becauseDeleteFailed(final String userId, final Throwable cause) {
-    return new PersistenceException(String.format(DELETE_FAILED_MSG, userId), cause);
-  }
-
-  public static PersistenceException becauseConnectionFailed(final Throwable cause) {
-    return new PersistenceException(CONNECTION_FAILED_MSG, cause);
   }
 }
